@@ -17,14 +17,13 @@ RUN id -u "$USERNAME" 2>/dev/null || \
 COPY --chown=${USERNAME}:${USERNAME} . /workspace
 WORKDIR /workspace
 
-# ── switch to regular user, set Lean toolchain ────────────────
+# ── switch to regular user, install Lean toolchain ─────────────
 USER ${USERNAME}
 
-# ❶ Pick a toolchain (installs it if missing)
-RUN elan self update -y && \
-    elan default leanprover/lean4:stable
+# ❶ Pick a toolchain (installs it if absent)
+RUN elan default leanprover/lean4:stable   # ← removed the “-y”
 
-# ❷ (Optional but handy) prime mathlib cache
+# ❷ Prime mathlib cache for faster first build
 RUN lake init _cache math      && \
     cd _cache                  && \
     lake exe cache get         && \
