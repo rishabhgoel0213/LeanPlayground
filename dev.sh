@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
-# Spin up a fully reproducible Lean container
-# -----------------------------------------------------------
-# 1. Builds the Docker image (if needed)
-# 2. Starts an interactive shell with the repo mounted
+# ---------------------------------------------------------------------------
+# One-shot script: build the image (if needed) and drop into an interactive
+# container with:
+#   • current repo mounted at /workspace
+#   • host’s ~/.ssh mounted read-only at the container user’s ~/.ssh
+#     → allows seamless git push/pull via your existing GitHub SSH keys
 #
-# Usage:   ./dev.sh
-# Extras:  IMAGE=lean-dev TAG=v1 ./dev.sh
-# -----------------------------------------------------------
+# Usage:     ./dev.sh
+# Variables: IMAGE=lean-dev TAG=latest ./dev.sh
+# ---------------------------------------------------------------------------
 
 set -euo pipefail
 
 IMAGE="${IMAGE:-lean-dev}"
 TAG="${TAG:-latest}"
+SSH_DIR="${HOME}/.ssh"
 
-echo "🛠️  Building image ${IMAGE}:${TAG} (if necessary)…"
+echo "🔨  Building ${IMAGE}:${TAG} (cached layers make this fast)…"
 docker build -t "${IMAGE}:${TAG}" .
 
-echo "🚀  Launching container. Ctrl-D or 'exit' to quit."
+echo "🚀  Launching interactive Lean workspace…"
 docker run --rm -it \
   -v "$(pwd)":/workspace \
-  -u "$(id -u)":"$(id -g)" \
+  ${SSH_DIR:+-v "${SSH_DIR}":/home/lean/.ssh:ro} \
   --name lean-playground \
   "${IMAGE}:${TAG}" \
   bash
