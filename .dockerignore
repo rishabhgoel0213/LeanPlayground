@@ -1,0 +1,6 @@
+# Ignore build artefacts & local caches
+lake-packages/
+.lean/
+build/
+.git
+.DS_Store
