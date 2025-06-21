@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
-# ---------------------------------------------------------------------------
-# One-shot script: build the image (if needed) and drop into an interactive
-# container with:
-#   • current repo mounted at /workspace
-#   • host’s ~/.ssh mounted read-only at the container user’s ~/.ssh
-#     → allows seamless git push/pull via your existing GitHub SSH keys
-#
-# Usage:     ./dev.sh
-# Variables: IMAGE=lean-dev TAG=latest ./dev.sh
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------
+# Build the image (cached) and start an interactive Lean shell
+# with:
+#   • repo mounted at /workspace
+#   • host ~/.ssh mounted read-only so pushes work
+# -----------------------------------------------------------------
 
 set -euo pipefail
 
@@ -16,7 +12,7 @@ IMAGE="${IMAGE:-lean-dev}"
 TAG="${TAG:-latest}"
 SSH_DIR="${HOME}/.ssh"
 
-echo "🔨  Building ${IMAGE}:${TAG} (cached layers make this fast)…"
+echo "🔨  Building ${IMAGE}:${TAG} (will use cache if unchanged)…"
 docker build -t "${IMAGE}:${TAG}" .
 
 echo "🚀  Launching interactive Lean workspace…"
