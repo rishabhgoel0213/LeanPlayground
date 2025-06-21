@@ -1,33 +1,33 @@
 # -------------------------------------------------------------
 # Lean 4 + mathlib4 dev image, personalised for Rishabh Goel
 # -------------------------------------------------------------
-# Build:  docker build -t lean-dev .
-# Shell:  docker run -it --rm -v "$PWD":/workspace lean-dev
-# -------------------------------------------------------------
-
 FROM leanprovercommunity/lean4:latest
 
-# ----- extras you’ll probably want inside the container -----
+# ── Become root so apt can write to /var/lib/apt/lists ─────────
+USER root
+
+# ----- CLI extras -------------------------------------------------------------
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         git ripgrep fzf \
  && rm -rf /var/lib/apt/lists/*
 
-# ----- non-root Lean user (UID 1000) -------------------------
+# ----- make sure the 'lean' user exists (UID 1000) --------------
 ARG USERNAME=lean
 ARG UID=1000
-RUN adduser --disabled-password --gecos "" --uid ${UID} ${USERNAME}
+RUN id -u "$USERNAME" 2>/dev/null || \
+    adduser --disabled-password --uid "$UID" --gecos "" "$USERNAME"
 
-# ----- copy repo into the image ------------------------------
+# ----- copy repo into the image ----------------------------------------------
 COPY --chown=${USERNAME}:${USERNAME} . /workspace
 WORKDIR /workspace
 
-# ----- pre-fetch mathlib4 cache for fast first builds --------
+# ----- pre-fetch mathlib cache for faster first build ------------
 RUN lake update && lake exe cache get
 
-# ----- configure Git identity & ensure an ~/.ssh directory ---
+# ----- configure git & prepare ~/.ssh mount point ----------------
 USER ${USERNAME}
-RUN git config --global user.name  "Rishabh Goel"  \
+RUN git config --global user.name  "Rishabh Goel" \
  && git config --global user.email "rishabhgoel0213@gmail.com" \
  && mkdir -p ~/.ssh && chmod 700 ~/.ssh
 
