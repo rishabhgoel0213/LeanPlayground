@@ -1,38 +1,41 @@
-# ----------------------------
-# Lean 4 + mathlib4 dev image
-# ----------------------------
-# Build with:  docker build -t lean-dev .
-# Run  with :  docker run -it --rm -v "$PWD":/workspace lean-dev
+# -------------------------------------------------------------
+# Lean 4 + mathlib4 development image, personalised for Rishabh
+# -------------------------------------------------------------
+# Build:  docker build -t lean-dev .
+# Shell:  docker run -it --rm -v "$PWD":/workspace lean-dev
 #
-# Everything in the repo is baked into /workspace at image-build time,
-# then you normally re-mount the repo so edits are live.
+# The repo’s contents are baked into /workspace so the image
+# is self-contained.  At run-time we typically mount the repo
+# again so edits are live (handled by dev.sh).
+# -------------------------------------------------------------
 
 FROM leanprover/lean4:stable
 
-# ----- extras you’ll probably want inside the container -----
-# • git        – version-control from inside the container
-# • ripgrep    – lightning-fast searching through proofs
-# • fzf        – fuzzy finder (great with rg + your shell)
+# ----- extra CLI goodies -----------------------------------------------------
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         git ripgrep fzf \
  && rm -rf /var/lib/apt/lists/*
 
-# ----- non-root user so mounted files aren’t owned by root -----
+# ----- create non-root user ---------------------------------------------------
 ARG USERNAME=lean
 ARG UID=1000
-RUN adduser --disabled-password --gecos "" --uid $UID $USERNAME
+RUN adduser --disabled-password --gecos "" --uid ${UID} ${USERNAME}
 
-# ----- copy the repo itself into the image -----
-# • This guarantees a working project even if you *don’t* mount.
-# • We set owner now so either root or USERNAME can rebuild Lake targets.
+# ----- copy repo into the image ----------------------------------------------
 COPY --chown=${USERNAME}:${USERNAME} . /workspace
-
 WORKDIR /workspace
 
-# ----- pull mathlib4 & its compiled cache for speed -----
-RUN lake update \
- && lake exe cache get
+# ----- pull mathlib4 + its binary cache for speed -----------------------------
+RUN lake update && lake exe cache get
 
-USER $USERNAME
+# ----- switch to regular user & preseed git identity --------------------------
+USER ${USERNAME}
+
+# global git config (name & email) for this user
+RUN git config --global user.name  "Rishabh Goel" \
+ && git config --global user.email "rishabhgoel0213@gmail.com" \
+ # make sure ~/.ssh exists for the incoming mount
+ && mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
 CMD ["/bin/bash"]
